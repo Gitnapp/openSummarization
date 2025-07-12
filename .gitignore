@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.manifest
+*.spec
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+.venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Jupyter
+.ipynb_checkpoints
+
+# dotenv
+.env
+.env.*
+
+# 临时文件
+*.tmp
+*.log
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# 项目自定义
+temp/
+result/
+output/
+*.wav
+*.mp3
+*.m4a
+*.ogg
+*.webm
+*.txt
