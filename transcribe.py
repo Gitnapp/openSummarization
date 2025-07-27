@@ -38,9 +38,9 @@ def extract_audio(input_path, output_path):
 
 def transcribe_audio(audio_path):
     url = "https://api.siliconflow.cn/v1/audio/transcriptions"
-    token = os.environ.get("SILICONFLOW_API_TOKEN")
+    token = os.environ.get("SILICONFLOW_API_KEY")
     if not token:
-        raise RuntimeError("请设置环境变量 SILICONFLOW_API_TOKEN 以包含 API Token")
+        raise RuntimeError("请设置环境变量 SILICONFLOW_API_KEY 以包含 API Token")
     headers = {
         "Authorization": f"Bearer {token}"
     }

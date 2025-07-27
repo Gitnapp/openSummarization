@@ -2,6 +2,7 @@ import json
 import yt_dlp
 import subprocess
 import sys
+import os
 
 ## 下载 Youtube 视频
 def download_youtube(url):
@@ -15,7 +16,14 @@ def download_youtube(url):
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        # 先获取视频信息
+        info = ydl.extract_info(url, download=False)
+        title = info['title']
+        
+        # 下载视频
         error_code = ydl.download(url)
+        
+        return title
 
 # 下载 Bilibili 视频
 def download_bilibili(url):
@@ -35,11 +43,19 @@ def download_bilibili(url):
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode == 0:
-            return True
+            # 从 temp 目录中找到最新下载的文件，提取标题
+            temp_dir = "./temp"
+            files = [f for f in os.listdir(temp_dir) if f.endswith('.m4a')]
+            if files:
+                latest_file = max(files, key=lambda f: os.path.getmtime(os.path.join(temp_dir, f)))
+                # 从文件名中提取标题（去掉扩展名）
+                title = os.path.splitext(latest_file)[0]
+                return title
+            return None
         else:
             print(f"下载失败: {result.stderr}")
-            return False
+            return None
             
     except Exception as e:
         print(f"调用 yutto 时发生错误: {e}")
-        return False
+        return None
