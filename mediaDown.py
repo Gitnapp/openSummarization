@@ -29,18 +29,22 @@ def download_youtube(url):
 def download_bilibili(url):
     """使用 subprocess 调用 yutto 命令"""
     try:
+        # 设置环境变量以解决编码问题
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+        
         # 构建命令
         cmd = [
             sys.executable, "-m", "yutto", 
             url,
             "--audio-only",
-            "--acodec", "mp4a:copy", # 指定下载mp4a格式,转换为wav格式
+            "--acodec", "mp4a:copy",
             "--no-danmaku",
             "--dir", "./temp"
         ]
         
-        # 执行命令
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # 执行命令，使用utf-8编码
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', env=env)
         
         if result.returncode == 0:
             # 从 temp 目录中找到最新下载的文件，提取标题
@@ -48,14 +52,16 @@ def download_bilibili(url):
             files = [f for f in os.listdir(temp_dir) if f.endswith('.m4a')]
             if files:
                 latest_file = max(files, key=lambda f: os.path.getmtime(os.path.join(temp_dir, f)))
-                # 从文件名中提取标题（去掉扩展名）
+                # 提取文件名（不含扩展名）作为标题
                 title = os.path.splitext(latest_file)[0]
                 return title
-            return None
+            else:
+                print("警告：未找到下载的m4a文件")
+                return None
         else:
-            print(f"下载失败: {result.stderr}")
+            print(f"yutto下载失败: {result.stderr}")
             return None
             
     except Exception as e:
-        print(f"调用 yutto 时发生错误: {e}")
+        print(f"下载过程出错: {e}")
         return None
