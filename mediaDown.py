@@ -9,6 +9,8 @@ def download_youtube(url):
     ydl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': './temp/%(title)s.%(ext)s',  # 指定保存目录到 /temp
+        'cookiesfrombrowser': ('chrome',),
+        'js_runtimes': {'node': {}, 'bun': {}},
         'postprocessors': [{  # 使用 ffmpeg 提取音频
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'm4a',
