@@ -5,15 +5,12 @@ import json
 dotenv.load_dotenv()
 
 def main(transcript):
-    url = os.getenv('SILICONFLOW_BASE_URL') + "/v1/chat/completions"
+    url = os.getenv('SILICONFLOW_BASE_URL') + "/chat/completions"
 
     payload = {
-        "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+        "model": "tencent/Hunyuan-MT-7B",
         "stream": False,
-        "max_tokens": 4096,
-        "enable_thinking": True,
-        "thinking_budget": 32768,
-        "min_p": 0.05,
+        "max_tokens": 32000,
         "temperature": 0.6,
         "top_p": 0.6,
         "top_k": 1,
@@ -34,15 +31,19 @@ def main(transcript):
 
     print("开始生成总结")
 
-    response = requests.request("POST", url, json=payload, headers=headers)
+    try:
+        response = requests.request("POST", url, json=payload, headers=headers, timeout=120)
+    except Exception as e:
+        print(f"请求API时发生网络错误: {e}")
+        return f"请求API超时或失败: {e}"
 
-    print("成功生成总结")
+    print("成功获取API响应")
     
     # 检查响应状态码
     if response.status_code != 200:
         print(f"API 请求失败，状态码: {response.status_code}")
         print(f"响应内容: {response.text}")
-        return "API 请求失败"
+        return f"API 请求失败，状态码: {response.status_code}"
     
     try:
         # 尝试解析JSON响应
@@ -51,7 +52,6 @@ def main(transcript):
         # 检查响应数据是否为字典类型
         if not isinstance(response_data, dict):
             print(f"响应数据不是字典格式: {type(response_data)}")
-            print(f"响应内容: {response.text}")
             return f"响应格式错误: {response.text}"
         
         # 检查是否包含choices字段
@@ -65,18 +65,25 @@ def main(transcript):
             return "响应格式错误: choices为空"
         
         # 提取内容
-        content = response_data['choices'][0]['message']['content']
-        return content
+        message = response_data['choices'][0]['message']
+        content = message.get('content', '')
+        reasoning = message.get('reasoning_content', '')
+        
+        final_output = ""
+        if reasoning:
+            final_output += f"【思考过程】\n{reasoning}\n\n"
+        if content:
+            final_output += f"【总结】\n{content}"
+            
+        if not final_output.strip():
+            print("警告：API返回了空内容")
+            return "API返回了空内容"
+            
+        return final_output.strip()
         
     except json.JSONDecodeError as e:
         print(f"JSON解析错误: {e}")
-        print(f"响应内容: {response.text}")
         return f"JSON解析失败: {response.text}"
-    except KeyError as e:
-        print(f"响应格式错误，缺少字段: {e}")
-        print(f"响应数据: {response_data}")
-        return f"响应格式错误: 缺少字段 {e}"
     except Exception as e:
         print(f"解析响应时出错: {e}")
-        print(f"响应内容: {response.text}")
         return f"解析响应失败: {str(e)}"
