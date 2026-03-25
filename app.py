@@ -23,40 +23,49 @@ def main(url):
     for file in os.listdir(os.path.join(os.getcwd(), "temp")):
         os.remove(os.path.join(os.getcwd(), "temp", file))
 
-    # 下载视频并获取标题
-    video_title = None
-    if "youtube" in url:
-        video_title = mediaDown.download_youtube(url)
-    elif "bilibili" in url or "b23.tv" in url:
-        video_title = mediaDown.download_bilibili(url)
-    else:
-        print("不支持的网站")
-        return None
+    # 第一步：尝试用 yt-dlp 下载字幕
+    print("正在尝试下载字幕...")
+    video_title, subtitle_text = mediaDown.download_subtitles(url)
 
-    if not video_title:
-        print("无法获取视频标题，使用默认文件名")
-        video_title = "summary"
+    if subtitle_text:
+        print("成功获取字幕，跳过音频转写")
+        transcript = subtitle_text
+        if not video_title:
+            video_title = "summary"
+    else:
+        # 第二步：无字幕，回退到下载音频 + API 转写
+        print("未找到字幕，将下载音频并转写...")
+        if "youtube" in url:
+            video_title = mediaDown.download_youtube(url)
+        elif "bilibili" in url or "b23.tv" in url:
+            video_title = mediaDown.download_bilibili(url)
+        else:
+            print("不支持的网站")
+            return None
+
+        if not video_title:
+            print("无法获取视频标题，使用默认文件名")
+            video_title = "summary"
+
+        # 扫描 temp 目录下的所有 m4a 文件
+        m4a_files = []
+        temp_dir = os.path.join(os.getcwd(), "temp")
+        for root, dirs, files in os.walk(temp_dir):
+            for file in files:
+                if file.lower().endswith('.m4a'):
+                    m4a_files.append(os.path.join(root, file))
+        if m4a_files:
+            latest_file = max(m4a_files, key=os.path.getmtime)
+            print(f"最新的 m4a 文件路径：{latest_file}")
+        else:
+            print("未找到 m4a 文件。")
+            return None
+
+        # 转写
+        transcript = transcribe.main(latest_file)
 
     # 清理文件名
     video_title = sanitize_filename(video_title)
-
-    # 扫描 temp 目录下的所有 m4a 文件，并返回最新一个文件的路径
-    m4a_files = []
-    temp_dir = os.path.join(os.getcwd(), "temp")
-    for root, dirs, files in os.walk(temp_dir):
-        for file in files:
-            if file.lower().endswith('.m4a'):
-                m4a_files.append(os.path.join(root, file))
-    if m4a_files:
-        # 按照文件的修改时间排序，返回最新的一个
-        latest_file = max(m4a_files, key=os.path.getmtime)
-        print("最新的 m4a 文件路径：")
-        print(latest_file)
-    else:
-        print("未找到 m4a 文件。")
-    
-    # 转写
-    transcript = transcribe.main(latest_file)
 
     # 总结
     summary = summarization.main(transcript)
